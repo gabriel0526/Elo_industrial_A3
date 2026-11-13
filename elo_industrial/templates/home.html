@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="container">
+  <section class="hero">
+    <div>
+      <h1>O resíduo de uma fábrica é a matéria-prima de outra.</h1>
+      <p>O Elo Industrial conecta empresas que geram sobra de madeira, plástico, metal e tecido com quem precisa desse material. Menos descarte, menos custo, mais reaproveitamento.</p>
+      <div class="acoes">
+        {% if user.is_authenticated %}
+          <a class="btn" href="{% url 'material_novo' %}">Cadastrar material</a>
+          <a class="btn btn-contorno" href="{% url 'painel' %}">Ir para o meu painel</a>
+        {% else %}
+          <a class="btn" href="{% url 'cadastro' %}">Criar conta da empresa</a>
+          <a class="btn btn-contorno" href="{% url 'login' %}">Já tenho conta</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <aside class="etiqueta" aria-label="Exemplo de material cadastrado">
+      <h2>Apara de madeira</h2>
+      <div>Marcenaria em Recife/PE</div>
+      <dl>
+        <dt>Quantidade</dt><dd>300 kg por semana</dd>
+        <dt>Modalidade</dt><dd>Venda ou doação</dd>
+        <dt>Retirada</dt><dd>Pelo comprador</dd>
+      </dl>
+      <div class="par">Quem pode usar: fabricante de briquete a 12 km</div>
+    </aside>
+  </section>
+
+  <section class="secao">
+    <h2>Como funciona</h2>
+    <div class="como-funciona">
+      <div><h3>Cadastre a empresa</h3><p>Diga se você gera resíduo, precisa de material ou os dois.</p></div>
+      <div><h3>Publique o material</h3><p>Informe tipo, quantidade, frequência e se é venda ou doação.</p></div>
+      <div><h3>Encontre a outra ponta</h3><p>Busque por tipo, cidade e distância. O sistema também sugere as combinações mais compatíveis.</p></div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <h2>Publicados recentemente</h2>
+    {% if recentes %}
+      <ul class="lista">
+        {% for m in recentes %}{% include '_linha_material.html' %}{% endfor %}
+      </ul>
+      <p style="margin-top:1rem;"><a href="{% url 'buscar' %}">Ver todos os materiais e filtrar a busca</a></p>
+    {% else %}
+      <div class="vazio">
+        <p>Nenhum material publicado ainda. Seja a primeira empresa a cadastrar.</p>
+        <a class="btn" href="{% url 'cadastro' %}">Criar conta da empresa</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

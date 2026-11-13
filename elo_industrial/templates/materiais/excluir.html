@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block titulo %}Excluir material | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="cartao estreito">
+  <h1>Excluir material</h1>
+  <p>Você vai excluir <strong>{{ material.titulo }}</strong>. Essa ação não pode ser desfeita.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="rodape-form">
+      <button class="btn btn-perigo" type="submit">Excluir material</button>
+      <a href="{% url 'painel' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<li class="linha {% if m.intencao == 'procura' %}procura{% endif %}">
+  <div>
+    <h3><a href="{% url 'material_detalhe' m.pk %}">{{ m.titulo }}</a></h3>
+    <p class="meta">
+      {{ m.empresa.nome }}, {{ m.empresa.cidade }}/{{ m.empresa.estado }}
+      &nbsp;|&nbsp; {{ m.quantidade|floatformat:"-2" }} {{ m.get_unidade_display }}
+      {% if m.frequencia != 'unica' %}({{ m.get_frequencia_display|lower }}){% endif %}
+      {% if m.distancia is not None %}&nbsp;|&nbsp; {% if m.distancia < 1 %}na sua cidade{% else %}a {{ m.distancia|floatformat:0 }} km de você{% endif %}{% endif %}
+    </p>
+  </div>
+  <div class="lado">
+    <span class="selo {% if m.intencao == 'procura' %}procura{% endif %}">
+      {% if m.intencao == 'procura' %}Procura{% else %}Oferta{% endif %}: {{ m.get_categoria_display|lower }}
+    </span>
+    {% if mostrar_acoes %}
+      {% if m.qtd_combinacoes %}
+        <a class="destaque" href="{% url 'material_detalhe' m.pk %}#combinacoes">{{ m.qtd_combinacoes }} combinaç{{ m.qtd_combinacoes|pluralize:"ão,ões" }}</a>
+      {% endif %}
+      {% if not m.ativo %}<span class="selo inativo">Inativo</span>{% endif %}
+      <a href="{% url 'material_editar' m.pk %}">Editar</a>
+      <a href="{% url 'material_excluir' m.pk %}">Excluir</a>
+    {% endif %}
+  </div>
+</li>

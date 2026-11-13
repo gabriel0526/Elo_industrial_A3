@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block titulo %}Buscar materiais | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="container">
+  <div class="painel-topo">
+    <div>
+      <h1>Buscar materiais</h1>
+      <p>{{ total }} anúncio{{ total|pluralize }} {% if tem_filtro %}com esses filtros{% else %}ativo{{ total|pluralize }}{% endif %}</p>
+    </div>
+    {% if user.is_authenticated %}<a class="btn" href="{% url 'material_novo' %}">Novo material</a>{% endif %}
+  </div>
+
+  <form class="filtros" method="get">
+    <div class="campo busca-texto">
+      <label for="{{ form.q.id_for_label }}">{{ form.q.label }}</label>
+      {{ form.q }}
+    </div>
+    <div class="campo"><label for="{{ form.intencao.id_for_label }}">{{ form.intencao.label }}</label>{{ form.intencao }}</div>
+    <div class="campo"><label for="{{ form.categoria.id_for_label }}">Categoria</label>{{ form.categoria }}</div>
+    <div class="campo"><label for="{{ form.modalidade.id_for_label }}">Modalidade</label>{{ form.modalidade }}</div>
+    <div class="campo"><label for="{{ form.cidade.id_for_label }}">Cidade</label>{{ form.cidade }}</div>
+    <div class="campo"><label for="{{ form.estado.id_for_label }}">UF</label>{{ form.estado }}</div>
+    {% if proximos_disponivel %}
+      <div class="campo"><label for="{{ form.ordem.id_for_label }}">{{ form.ordem.label }}</label>{{ form.ordem }}</div>
+    {% endif %}
+    <div class="acoes-filtro">
+      <button class="btn" type="submit">Filtrar</button>
+      {% if tem_filtro %}<a href="{% url 'buscar' %}">Limpar filtros</a>{% endif %}
+    </div>
+  </form>
+
+  {% if pagina.object_list %}
+    <ul class="lista">
+      {% for m in pagina %}{% include '_linha_material.html' %}{% endfor %}
+    </ul>
+
+    {% if pagina.paginator.num_pages > 1 %}
+      <nav class="paginacao" aria-label="Páginas de resultados">
+        {% if pagina.has_previous %}
+          <a href="?{% if consulta %}{{ consulta }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anterior</a>
+        {% endif %}
+        <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        {% if pagina.has_next %}
+          <a href="?{% if consulta %}{{ consulta }}&{% endif %}pagina={{ pagina.next_page_number }}">Próxima</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="vazio">
+      {% if tem_filtro %}
+        <p>Nenhum material encontrado com esses filtros. Tente tirar algum filtro ou buscar por outra palavra.</p>
+        <a class="btn btn-contorno" href="{% url 'buscar' %}">Limpar filtros</a>
+      {% else %}
+        <p>Ainda não há materiais publicados.</p>
+        {% if user.is_authenticated %}<a class="btn" href="{% url 'material_novo' %}">Cadastrar material</a>{% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ material.titulo }} | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="container" style="padding-block: 2rem 3rem;">
+  <div class="detalhe">
+    <div>
+      <span class="selo {% if material.intencao == 'procura' %}procura{% endif %}">
+        {% if material.intencao == 'procura' %}Procura{% else %}Oferta{% endif %}: {{ material.get_categoria_display|lower }}
+      </span>
+      <h1 style="margin:.6rem 0 .25rem; font-stretch:112%; font-weight:800;">{{ material.titulo }}</h1>
+      <p style="color:var(--aco); margin:0;">{{ material.empresa.nome }}, {{ material.empresa.cidade }}/{{ material.empresa.estado }}</p>
+      <dl>
+        <dt>Quantidade</dt><dd>{{ material.quantidade|floatformat:"-2" }} {{ material.get_unidade_display }}</dd>
+        <dt>Frequência</dt><dd>{{ material.get_frequencia_display }}</dd>
+        <dt>Modalidade</dt><dd>{{ material.get_modalidade_display }}</dd>
+        {% if material.preco %}<dt>Preço</dt><dd>R$ {{ material.preco|floatformat:2 }} por {{ material.get_unidade_display }}</dd>{% endif %}
+      </dl>
+      {% if material.descricao %}<p>{{ material.descricao|linebreaksbr }}</p>{% endif %}
+      {% if user.is_authenticated and material.empresa.usuario_id == user.id %}
+        <a class="btn btn-contorno" href="{% url 'material_editar' material.pk %}">Editar</a>
+      {% endif %}
+    </div>
+    {% if material.foto %}
+      <div><img src="{{ material.foto.url }}" alt="Foto de {{ material.titulo }}"></div>
+    {% endif %}
+  </div>
+
+  <section id="combinacoes" style="margin-top:2.5rem;">
+    <h2 style="font-size:1.4rem; font-stretch:112%; font-weight:800; margin:0 0 .25rem;">
+      {% if material.intencao == 'oferta' %}Empresas que procuram este material{% else %}Empresas que oferecem este material{% endif %}
+    </h2>
+    <p style="color:var(--aco); margin:0 0 1rem;">As combinações são ordenadas por compatibilidade de distância, volume, modalidade e frequência.</p>
+    {% if combinacoes %}
+      <ul class="lista">
+        {% for c in combinacoes %}{% include '_combinacao.html' %}{% endfor %}
+      </ul>
+    {% else %}
+      <div class="vazio">
+        <p>Ainda não há anúncios compatíveis com este. Quando uma empresa publicar algo parecido, ele aparece aqui.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
