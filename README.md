@@ -1,1 +1,0 @@
-# Elo_industrial_A3
