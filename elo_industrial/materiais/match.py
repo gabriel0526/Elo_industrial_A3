@@ -1,17 +1,3 @@
-"""Motor de match (versão por regras).
-
-Dado um anúncio de OFERTA, procura os anúncios de PROCURA compatíveis (e o contrário).
-Cada combinação recebe uma pontuação de 0 a 100, somando quatro critérios, e uma lista
-de motivos em português para explicar o resultado ao usuário:
-
-    distância    até 40 pontos
-    volume       até 30 pontos
-    modalidade   até 15 pontos   (venda x doação x a combinar)
-    frequência   até 15 pontos
-
-A categoria precisa ser a mesma, senão nem entra na lista. Na etapa de IA, este mesmo
-formato de pontuação poderá ser substituído por um modelo que aprende com o histórico.
-"""
 from dataclasses import dataclass, field
 from decimal import Decimal
 

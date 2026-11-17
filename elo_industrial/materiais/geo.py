@@ -1,10 +1,3 @@
-"""Distância entre empresas.
-
-Para o MVP usamos uma tabelinha com as coordenadas das capitais e de algumas cidades
-de Pernambuco. Cidade que não está na tabela fica sem coordenada e o sistema usa
-"mesma cidade / mesmo estado" como aproximação. Na etapa de produção dá para trocar
-essa tabela por uma API de geocodificação sem mexer no resto do código.
-"""
 import unicodedata
 from math import asin, cos, radians, sin, sqrt
 

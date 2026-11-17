@@ -1,8 +1,3 @@
-"""Cria empresas e anúncios de exemplo para testar a busca e o match.
-
-Uso:  python manage.py popular_exemplo
-Todas as empresas de exemplo usam a senha:  exemplo12345
-"""
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
