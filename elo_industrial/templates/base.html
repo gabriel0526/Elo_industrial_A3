@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Elo Industrial{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+</head>
+<body>
+  <header class="topo">
+    <div class="container">
+      <a class="marca" href="{% url 'home' %}">Elo<span>Industrial</span></a>
+      <nav class="menu">
+        <a href="{% url 'buscar' %}">Buscar materiais</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'painel' %}">Meu painel</a>
+          <a href="{% url 'material_novo' %}">Novo material</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn-link" type="submit">Sair</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Entrar</a>
+          <a class="btn" href="{% url 'cadastro' %}">Criar conta</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="container">
+      <ul class="mensagens">
+        {% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <main>{% block conteudo %}{% endblock %}</main>
+
+  <footer class="rodape">
+    <div class="container">Elo Industrial: o resíduo de uma empresa pode ser a matéria-prima de outra.</div>
+  </footer>
+</body>
+</html>

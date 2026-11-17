@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block titulo %}Meu painel | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="container">
+  <div class="painel-topo">
+    <div>
+      <h1>{{ empresa.nome }}</h1>
+      <p>{{ empresa.cidade }}/{{ empresa.estado }}, {{ empresa.get_tipo_display|lower }}</p>
+    </div>
+    <a class="btn" href="{% url 'material_novo' %}">Novo material</a>
+  </div>
+
+  {% if materiais %}
+    <ul class="lista">
+      {% for m in materiais %}{% include '_linha_material.html' with mostrar_acoes=True %}{% endfor %}
+    </ul>
+  {% else %}
+    <div class="vazio">
+      <p>Você ainda não cadastrou nenhum material.</p>
+      <a class="btn" href="{% url 'material_novo' %}">Cadastrar o primeiro material</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

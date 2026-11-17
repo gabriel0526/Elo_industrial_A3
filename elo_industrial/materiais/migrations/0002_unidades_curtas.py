@@ -1,0 +1,16 @@
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('materiais', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name='material',
+            name='unidade',
+            field=models.CharField(choices=[('kg', 'kg'), ('t', 'ton'), ('m3', 'm³'), ('un', 'un')], default='kg', max_length=3),
+        ),
+    ]
