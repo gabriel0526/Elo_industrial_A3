@@ -1,0 +1,14 @@
+<li class="linha combinacao {% if c.material.intencao == 'procura' %}procura{% endif %}">
+  <div>
+    <h3><a href="{% url 'material_detalhe' c.material.pk %}">{{ c.material.titulo }}</a></h3>
+    <p class="meta">
+      {{ c.material.empresa.nome }}, {{ c.material.empresa.cidade }}/{{ c.material.empresa.estado }}
+      &nbsp;|&nbsp; {{ c.material.quantidade|floatformat:"-2" }} {{ c.material.get_unidade_display }}
+    </p>
+    <p class="motivos">{% for motivo in c.motivos %}{{ motivo }}{% if not forloop.last %}; {% endif %}{% endfor %}.</p>
+  </div>
+  <div class="pontos" title="Pontuação de compatibilidade de 0 a 100">
+    <strong>{{ c.pontuacao }}</strong>
+    <span>de 100</span>
+  </div>
+</li>

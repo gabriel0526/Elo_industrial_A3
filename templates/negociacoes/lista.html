@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block titulo %}Negociações | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="container" style="padding-bottom:3rem;">
+  <div class="painel-topo">
+    <div>
+      <h1>Negociações</h1>
+      <p>Propostas que você enviou e recebeu.</p>
+    </div>
+    <a class="btn btn-contorno" href="{% url 'buscar' %}">Buscar materiais</a>
+  </div>
+
+  {% if not aguardando and not andamento and not encerradas %}
+    <div class="vazio">
+      <p>Você ainda não tem negociações. Abra um anúncio na busca e clique em "Fazer proposta".</p>
+      <a class="btn" href="{% url 'buscar' %}">Buscar materiais</a>
+    </div>
+  {% endif %}
+
+  {% if aguardando %}
+    <h2 class="subtitulo">Esperando uma ação sua</h2>
+    <ul class="lista">{% for n in aguardando %}{% include 'negociacoes/_item.html' with n=n %}{% endfor %}</ul>
+  {% endif %}
+
+  {% if andamento %}
+    <h2 class="subtitulo">Esperando a outra empresa</h2>
+    <ul class="lista">{% for n in andamento %}{% include 'negociacoes/_item.html' with n=n %}{% endfor %}</ul>
+  {% endif %}
+
+  {% if encerradas %}
+    <h2 class="subtitulo">Encerradas</h2>
+    <ul class="lista">{% for n in encerradas %}{% include 'negociacoes/_item.html' with n=n %}{% endfor %}</ul>
+  {% endif %}
+</div>
+{% endblock %}
