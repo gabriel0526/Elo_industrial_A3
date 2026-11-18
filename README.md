@@ -1,7 +1,5 @@
 # Elo Industrial
 
-Marketplace B2B de resíduos industriais: empresas que geram sobra de material encontram quem precisa dele como insumo.
-
 ## Como rodar
 
 ```bash
