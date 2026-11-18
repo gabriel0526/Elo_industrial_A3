@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block titulo %}Recibo {{ recibo.codigo }} | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="recibo-pagina">
+  <div class="sem-impressao recibo-acoes">
+    <a href="{% url 'negociacao_detalhe' recibo.negociacao.pk %}">Voltar para a negociação</a>
+    <button class="btn" type="button" onclick="window.print()">Imprimir ou salvar em PDF</button>
+  </div>
+
+  <article class="recibo">
+    <header>
+      <div>
+        <p class="recibo-marca">Elo<span>Industrial</span></p>
+        <h1>Recibo de transação</h1>
+      </div>
+      <div class="recibo-codigo">
+        <strong>{{ recibo.codigo }}</strong>
+        <span>Emitido em {{ recibo.emitido_em|date:"d/m/Y \à\s H:i" }}</span>
+      </div>
+    </header>
+
+    <div class="recibo-partes">
+      <div>
+        <h2>Empresa fornecedora</h2>
+        <p><strong>{{ recibo.fornecedora_nome }}</strong><br>{{ recibo.fornecedora_local }}</p>
+      </div>
+      <div>
+        <h2>Empresa receptora</h2>
+        <p><strong>{{ recibo.receptora_nome }}</strong><br>{{ recibo.receptora_local }}</p>
+      </div>
+    </div>
+
+    <table class="recibo-tabela">
+      <thead>
+        <tr><th>Material</th><th>Categoria</th><th class="num">Quantidade</th><th class="num">Preço unitário</th><th class="num">Total</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ recibo.material_titulo }}</td>
+          <td>{{ recibo.categoria }}</td>
+          <td class="num">{{ recibo.quantidade|floatformat:"-2" }} {{ recibo.unidade }}</td>
+          <td class="num">{% if recibo.preco_unitario %}R$ {{ recibo.preco_unitario|floatformat:2 }}{% else %}-{% endif %}</td>
+          <td class="num">R$ {{ recibo.valor_total|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <dl class="recibo-dados">
+      <dt>Modalidade</dt><dd>{{ recibo.modalidade }}</dd>
+      <dt>Logística</dt><dd>{{ recibo.logistica }}</dd>
+      <dt>Entrega confirmada pelas duas empresas em</dt><dd>{{ recibo.negociacao.concluida_em|date:"d/m/Y" }}</dd>
+    </dl>
+
+    <p class="recibo-aviso">
+      Este recibo registra o acordo feito pelas empresas na plataforma Elo Industrial. Ele não substitui nota fiscal
+      nem os documentos de transporte e destinação de resíduos exigidos pela legislação, que continuam sendo
+      responsabilidade das empresas.
+    </p>
+  </article>
+</div>
+{% endblock %}

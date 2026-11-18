@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block titulo %}{{ titulo }} | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="cartao largo">
+  <h1>{{ titulo }}</h1>
+  {% if ia_material %}
+    {% if ia_ativa %}
+    <section class="caixa-ia" data-ia-material data-url="{% url 'ia_material' %}">
+      <label for="ia-texto"><strong>Descreva com suas palavras</strong> e a IA preenche o formulário</label>
+      <textarea id="ia-texto" rows="3" maxlength="1000" placeholder="Ex.: sobram uns 300 kg de apara de MDF toda semana na minha marcenaria, posso vender"></textarea>
+      <div class="linha-ia">
+        <button class="btn btn-contorno" type="button" id="ia-botao">Preencher com IA</button>
+        <span id="ia-status" role="status" aria-live="polite"></span>
+      </div>
+      <p class="ajuda">A IA só sugere. Confira os campos antes de salvar.</p>
+    </section>
+    {% elif ia_dica %}
+    <p class="ajuda">IA desativada: defina <code>ANTHROPIC_API_KEY</code> no arquivo <code>.env</code> para ver o preenchimento automático aqui.</p>
+    {% endif %}
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% include '_campo.html' with campo=form.intencao %}
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.categoria %}
+      {% include '_campo.html' with campo=form.titulo %}
+    </div>
+    {% include '_campo.html' with campo=form.descricao %}
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.quantidade %}
+      {% include '_campo.html' with campo=form.unidade %}
+    </div>
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.frequencia %}
+      {% include '_campo.html' with campo=form.modalidade %}
+    </div>
+    {% include '_campo.html' with campo=form.preco %}
+    {% include '_campo.html' with campo=form.foto %}
+    {% include '_campo.html' with campo=form.ativo %}
+    <div class="rodape-form">
+      <button class="btn" type="submit">Salvar material</button>
+      <a href="{% url 'painel' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}{% if ia_ativa and ia_material %}<script src="{% static 'js/ia.js' %}" defer></script>{% endif %}{% endblock %}
