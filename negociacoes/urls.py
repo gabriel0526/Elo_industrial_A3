@@ -12,4 +12,6 @@ urlpatterns = [
     path('negociacoes/<int:pk>/encerrar/', views.encerrar, name='negociacao_encerrar'),
     path('negociacoes/<int:pk>/confirmar/', views.confirmar, name='negociacao_confirmar'),
     path('recibos/<int:pk>/', views.recibo, name='recibo'),
+    path('resultados/', views.resultados, name='resultados'),
+    path('resultados/exportar/', views.resultados_exportar, name='resultados_exportar'),
 ]

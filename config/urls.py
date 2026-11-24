@@ -9,6 +9,7 @@ urlpatterns = [
     path('', include('materiais.urls')),
     path('', include('negociacoes.urls')),
     path('', include('ia.urls')),
+    path('', include('pwa.urls')),
 ]
 
 # em desenvolvimento, o Django serve as fotos enviadas

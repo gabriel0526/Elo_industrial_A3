@@ -1,4 +1,4 @@
-"""Conversa com a API do Claude (Anthropic).
+"""Conversa com a API de IA: Gemini (Google, tem plano gratuito) ou Claude (Anthropic).
 
 Toda a IA do site passa por aqui. As views só chamam duas funções:
 
@@ -10,6 +10,10 @@ Regras que valem para tudo:
 - tudo que a IA devolve é validado aqui (nunca se confia direto no que o modelo respondeu);
 - telefone e e-mail das empresas nunca são enviados para a API.
 """
+import json
+import re
+import urllib.error
+import urllib.request
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -31,8 +35,29 @@ class LimiteExcedido(Exception):
     """A pessoa usou a IA mais vezes do que o limite por hora."""
 
 
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models'
+GEMINI_MAX_TOKENS = 2048  # folga: os modelos "pensam" antes de responder e isso conta nos tokens
+
+
+def provedor():
+    """Qual IA usar: 'gemini', 'anthropic' ou None (desligada).
+
+    IA_PROVEDOR no .env força a escolha. Sem ele, usa a que tiver chave (Gemini primeiro, por ser gratuito).
+    """
+    escolhido = (settings.IA_PROVEDOR or '').strip().lower()
+    if escolhido == 'gemini':
+        return 'gemini' if settings.GEMINI_API_KEY else None
+    if escolhido == 'anthropic':
+        return 'anthropic' if settings.ANTHROPIC_API_KEY else None
+    if settings.GEMINI_API_KEY:
+        return 'gemini'
+    if settings.ANTHROPIC_API_KEY:
+        return 'anthropic'
+    return None
+
+
 def disponivel():
-    return bool(settings.ANTHROPIC_API_KEY)
+    return provedor() is not None
 
 
 def checar_limite(usuario):
@@ -45,7 +70,7 @@ def checar_limite(usuario):
 
 def _cliente():
     if not disponivel():
-        raise IAIndisponivel('Defina ANTHROPIC_API_KEY para ativar a IA.')
+        raise IAIndisponivel('Defina ANTHROPIC_API_KEY (ou GEMINI_API_KEY) para ativar a IA.')
     try:
         import anthropic
     except ImportError as erro:
@@ -66,6 +91,116 @@ def _chamar(**pedido):
         raise IAErro('A API está com muitas chamadas agora. Tente de novo em instantes.') from erro
     except anthropic.APIError as erro:
         raise IAErro('Não consegui falar com a IA agora. Tente de novo.') from erro
+
+
+# ---------------------------------------------------------------------------
+# Camada de geração: o resto do arquivo só pede "texto" ou "JSON" e não sabe qual IA responde
+# ---------------------------------------------------------------------------
+
+def _json_anthropic(sistema, usuario, ferramenta, max_tokens):
+    resposta = _chamar(
+        max_tokens=max_tokens,
+        system=sistema,
+        messages=[{'role': 'user', 'content': usuario}],
+        tools=[ferramenta],
+        tool_choice={'type': 'tool', 'name': ferramenta['name']},
+    )
+    for bloco in resposta.content:
+        if getattr(bloco, 'type', '') == 'tool_use':
+            return bloco.input
+    return {}
+
+
+def _texto_anthropic(sistema, usuario, max_tokens):
+    resposta = _chamar(max_tokens=max_tokens, system=sistema, messages=[{'role': 'user', 'content': usuario}])
+    return ''.join(b.text for b in resposta.content if getattr(b, 'type', '') == 'text')
+
+
+def _post_gemini(corpo):
+    """Chamada HTTP ao Gemini. A chave vai no cabeçalho (não na URL) para não aparecer em logs."""
+    pedido = urllib.request.Request(
+        f'{GEMINI_URL}/{settings.GEMINI_MODEL}:generateContent',
+        data=json.dumps(corpo).encode('utf-8'),
+        method='POST',
+        headers={'Content-Type': 'application/json', 'x-goog-api-key': settings.GEMINI_API_KEY},
+    )
+    try:
+        with urllib.request.urlopen(pedido, timeout=30) as resposta:
+            return json.loads(resposta.read().decode('utf-8'))
+    except urllib.error.HTTPError as erro:
+        if erro.code == 429:
+            raise IAErro('O limite gratuito do Gemini foi atingido. Espere um pouco e tente de novo.') from erro
+        if erro.code == 404:
+            raise IAErro('O Gemini não achou o modelo. Confira GEMINI_MODEL no .env.') from erro
+        if erro.code in (400, 401, 403):
+            raise IAErro('O Gemini recusou o pedido. Confira GEMINI_API_KEY no .env.') from erro
+        raise IAErro('Não consegui falar com a IA agora. Tente de novo.') from erro
+    except (urllib.error.URLError, TimeoutError, ValueError) as erro:
+        raise IAErro('Não consegui falar com a IA agora. Tente de novo.') from erro
+
+
+def _texto_da_resposta_gemini(dados):
+    if (dados.get('promptFeedback') or {}).get('blockReason'):
+        raise IAErro('A IA recusou este conteúdo. Reescreva e tente de novo.')
+    candidatos = dados.get('candidates') or []
+    if not candidatos:
+        raise IAErro('A IA não devolveu resposta. Tente de novo.')
+    candidato = candidatos[0]
+    partes = (candidato.get('content') or {}).get('parts') or []
+    texto = ''.join(p.get('text', '') for p in partes if not p.get('thought')).strip()
+    if not texto:
+        if candidato.get('finishReason') == 'MAX_TOKENS':
+            raise IAErro('A resposta da IA veio cortada. Tente de novo.')
+        raise IAErro('A IA não devolveu texto. Tente de novo.')
+    return texto
+
+
+def _pedido_gemini(sistema, usuario, **config):
+    return {
+        'systemInstruction': {'parts': [{'text': sistema}]},
+        'contents': [{'role': 'user', 'parts': [{'text': usuario}]}],
+        'generationConfig': {'maxOutputTokens': GEMINI_MAX_TOKENS, **config},
+    }
+
+
+def _descrever_campos(ferramenta):
+    """Transforma o esquema da ferramenta em texto, para pedir o JSON a uma IA sem 'ferramentas'."""
+    esquema = ferramenta['input_schema']
+    obrigatorios = set(esquema.get('required', []))
+    linhas = []
+    for nome, prop in esquema['properties'].items():
+        tipo = 'um dos valores: ' + ', '.join(f'"{v}"' for v in prop['enum']) if 'enum' in prop else (
+            'número' if prop['type'] == 'number' else 'texto')
+        extra = f" ({prop['description']})" if prop.get('description') else ''
+        linhas.append(f'- "{nome}": {tipo}{extra}{" [obrigatório]" if nome in obrigatorios else ""}')
+    return '\n'.join(linhas)
+
+
+def _json_gemini(sistema, usuario, ferramenta):
+    sistema = (
+        f'{sistema}\n\nResponda SOMENTE com um objeto JSON, sem texto antes ou depois e sem markdown. '
+        f'Chaves possíveis (omita as que a pessoa não informou):\n{_descrever_campos(ferramenta)}'
+    )
+    corpo = _pedido_gemini(sistema, usuario, temperature=0.2, responseMimeType='application/json')
+    texto = _texto_da_resposta_gemini(_post_gemini(corpo))
+    texto = re.sub(r'^```(?:json)?\s*|\s*```$', '', texto.strip())
+    try:
+        dados = json.loads(texto)
+    except ValueError as erro:
+        raise IAErro('A IA respondeu num formato inesperado. Tente de novo.') from erro
+    return dados if isinstance(dados, dict) else {}
+
+
+def _gerar_json(sistema, usuario, ferramenta, max_tokens):
+    if provedor() == 'gemini':
+        return _json_gemini(sistema, usuario, ferramenta)
+    return _json_anthropic(sistema, usuario, ferramenta, max_tokens)
+
+
+def _gerar_texto(sistema, usuario, max_tokens):
+    if provedor() == 'gemini':
+        return _texto_da_resposta_gemini(_post_gemini(_pedido_gemini(sistema, usuario, temperature=0.5)))
+    return _texto_anthropic(sistema, usuario, max_tokens)
 
 
 # ---------------------------------------------------------------------------
@@ -148,18 +283,12 @@ def limpar_anuncio(bruto):
 
 
 def extrair_anuncio(texto):
-    resposta = _chamar(
-        max_tokens=600,
-        system=SISTEMA_ANUNCIO,
-        messages=[{'role': 'user', 'content': f'<descricao_da_pessoa>\n{texto}\n</descricao_da_pessoa>'}],
-        tools=[FERRAMENTA_ANUNCIO],
-        tool_choice={'type': 'tool', 'name': FERRAMENTA_ANUNCIO['name']},
+    bruto = _gerar_json(
+        SISTEMA_ANUNCIO, f'<descricao_da_pessoa>\n{texto}\n</descricao_da_pessoa>', FERRAMENTA_ANUNCIO, 600
     )
-    for bloco in resposta.content:
-        if getattr(bloco, 'type', '') == 'tool_use':
-            campos = limpar_anuncio(bloco.input)
-            if campos:
-                return campos
+    campos = limpar_anuncio(bruto)
+    if campos:
+        return campos
     raise IAErro('Não consegui entender a descrição. Tente dar mais detalhes.')
 
 
@@ -212,13 +341,8 @@ def montar_contexto_negociacao(neg, empresa, instrucao=''):
 
 
 def sugerir_mensagem(neg, empresa, instrucao=''):
-    resposta = _chamar(
-        max_tokens=400,
-        system=SISTEMA_MENSAGEM,
-        messages=[{'role': 'user', 'content': montar_contexto_negociacao(neg, empresa, instrucao)}],
-    )
-    texto = ''.join(b.text for b in resposta.content if getattr(b, 'type', '') == 'text').strip()
-    texto = texto.strip('"“”')[:1000]  # o campo de mensagem aceita até 1000 caracteres
+    texto = _gerar_texto(SISTEMA_MENSAGEM, montar_contexto_negociacao(neg, empresa, instrucao), 400)
+    texto = texto.strip().strip('"“”')[:1000]  # o campo de mensagem aceita até 1000 caracteres
     if not texto:
         raise IAErro('A IA não devolveu texto. Tente de novo.')
     return texto

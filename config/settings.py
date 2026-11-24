@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'materiais',
     'negociacoes',
     'ia',
+    'pwa',
 ]
 
 MIDDLEWARE = [
@@ -167,7 +168,15 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-# IA (Claude, da Anthropic). Sem a chave, o site funciona normalmente e os botões de IA somem.
+# App instalável (PWA). Troque o valor quando mudar muita coisa do visual: força os aparelhos a baixar tudo de novo.
+PWA_VERSION = 'etapa6-1'
+
+
+# IA: Gemini (Google, tem plano gratuito) ou Claude (Anthropic). Sem nenhuma chave, o site funciona
+# normalmente e os botões de IA somem. IA_PROVEDOR ('gemini' ou 'anthropic') força a escolha; vazio = automático.
+IA_PROVEDOR = os.environ.get('IA_PROVEDOR', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-haiku-5-5')
 IA_LIMITE_POR_HORA = int(os.environ.get('IA_LIMITE_POR_HORA', '30'))

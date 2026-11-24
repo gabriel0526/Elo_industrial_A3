@@ -1,11 +1,12 @@
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from contas.decorators import empresa_obrigatoria
 from materiais.models import Material
 
+from . import resultados as calculo
 from .forms import MensagemForm, PropostaForm, TermosForm
 from .models import AcaoInvalida, Negociacao, Recibo
 
@@ -176,3 +177,45 @@ def recibo(request, pk):
     if not recibo.negociacao.participa(request.empresa):
         raise Http404
     return render(request, 'negociacoes/recibo.html', {'recibo': recibo})
+
+
+# ---------- painel de resultados (Etapa 5) ----------
+def _periodo(request):
+    chave = request.GET.get('periodo', calculo.PERIODO_PADRAO)
+    return chave if chave in calculo.PERIODOS else calculo.PERIODO_PADRAO
+
+
+@empresa_obrigatoria
+def resultados(request):
+    empresa = request.empresa
+    periodo = _periodo(request)
+
+    custo_texto = request.GET.get('custo', '').strip()
+    custo = calculo.ler_valor(custo_texto)
+    if custo_texto and custo is None:
+        messages.error(request, 'Não entendi o valor por tonelada. Use um número, por exemplo 180,50.')
+
+    negociacoes = calculo.concluidas(empresa, periodo)
+    recentes = negociacoes[:10]
+    for n in recentes:
+        n.outra = n.outra_parte(empresa)
+    return render(request, 'negociacoes/resultados.html', {
+        'dados': calculo.calcular(empresa, negociacoes, custo),
+        'periodos': [(chave, rotulo) for chave, (rotulo, _) in calculo.PERIODOS.items()],
+        'periodo': periodo,
+        'periodo_rotulo': calculo.PERIODOS[periodo][0],
+        'custo_texto': custo_texto if custo else '',
+        'recentes': recentes,
+        'total_concluidas': len(negociacoes),
+    })
+
+
+@empresa_obrigatoria
+def resultados_exportar(request):
+    empresa = request.empresa
+    negociacoes = calculo.concluidas(empresa, _periodo(request))
+    resposta = HttpResponse(content_type='text/csv; charset=utf-8')
+    resposta['Content-Disposition'] = 'attachment; filename="elo-industrial-historico.csv"'
+    resposta.write('\ufeff')  # marca de UTF-8 para o Excel mostrar os acentos certos
+    calculo.escrever_csv(resposta, empresa, negociacoes)
+    return resposta
