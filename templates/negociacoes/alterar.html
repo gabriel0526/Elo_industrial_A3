@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block titulo %}Alterar termos | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="cartao largo">
+  <h1>Alterar termos</h1>
+  <p style="margin-top:-.6rem; color:var(--aco);">
+    {{ neg.material.titulo }}. Depois de salvar, a outra empresa precisa aceitar os novos termos.
+  </p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.quantidade %}
+      {% include '_campo.html' with campo=form.preco %}
+    </div>
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.modalidade %}
+      {% include '_campo.html' with campo=form.retirada %}
+    </div>
+    <div class="rodape-form">
+      <button class="btn" type="submit">Enviar novos termos</button>
+      <a href="{% url 'negociacao_detalhe' neg.pk %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

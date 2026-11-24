@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block titulo %}Fazer proposta | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="cartao largo">
+  <h1>Fazer proposta</h1>
+  <div class="resumo-anuncio">
+    <strong>{{ material.titulo }}</strong>
+    <span>{{ material.empresa.nome }}, {{ material.empresa.cidade }}/{{ material.empresa.estado }}</span>
+    <span>
+      Anúncio: {{ material.quantidade|floatformat:"-2" }} {{ material.get_unidade_display }}
+      ({{ material.get_frequencia_display|lower }}), {{ material.get_modalidade_display|lower }}{% if material.preco %}, R$ {{ material.preco|floatformat:2 }} por {{ material.get_unidade_display }}{% endif %}
+    </span>
+  </div>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.quantidade %}
+      {% include '_campo.html' with campo=form.preco %}
+    </div>
+    <div class="grade-2">
+      {% include '_campo.html' with campo=form.modalidade %}
+      {% include '_campo.html' with campo=form.retirada %}
+    </div>
+    {% include '_campo.html' with campo=form.mensagem %}
+    <div class="rodape-form">
+      <button class="btn" type="submit">Enviar proposta</button>
+      <a href="{% url 'material_detalhe' material.pk %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

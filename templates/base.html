@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2d5c44">
+  <link rel="manifest" href="{% url 'manifesto' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Elo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{% block titulo %}Elo Industrial{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
+</head>
+<body{% if user.is_authenticated %} class="logado"{% endif %}>
+  <header class="topo">
+    <div class="container">
+      <a class="marca" href="{% url 'home' %}">Elo<span>Industrial</span></a>
+      <nav class="menu">
+        <a {% if user.is_authenticated %}class="so-desktop" {% endif %}href="{% url 'buscar' %}">Buscar materiais</a>
+        {% if user.is_authenticated %}
+          <a class="so-desktop" href="{% url 'negociacoes_lista' %}">Negociações{% if qtd_pendencias %} <span class="contador" title="Aguardando uma ação sua">{{ qtd_pendencias }}</span>{% endif %}</a>
+          <a class="so-desktop" href="{% url 'resultados' %}">Resultados</a>
+          <a class="so-desktop" href="{% url 'painel' %}">Meu painel</a>
+          <a class="so-desktop" href="{% url 'material_novo' %}">Novo material</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn-link" type="submit">Sair</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Entrar</a>
+          <a class="btn" href="{% url 'cadastro' %}">Criar conta</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="container">
+      <ul class="mensagens">
+        {% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <main>{% block conteudo %}{% endblock %}</main>
+
+  <footer class="rodape">
+    <div class="container">
+      Elo Industrial: o resíduo de uma empresa pode ser a matéria-prima de outra.
+      <div class="instalar">
+        <button class="btn btn-contorno" type="button" id="instalar-app" hidden>Instalar o app</button>
+        <p id="dica-ios" class="ajuda" hidden>Para instalar no iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início".</p>
+      </div>
+    </div>
+  </footer>
+
+  {% if user.is_authenticated %}
+  {% with atual=request.resolver_match.url_name %}
+  <nav class="abas-app" aria-label="Navegação principal">
+    <a href="{% url 'buscar' %}" {% if atual == 'buscar' or atual == 'material_detalhe' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>
+      <span>Buscar</span>
+    </a>
+    <a href="{% url 'negociacoes_lista' %}" {% if atual|slice:":10" == 'negociacao' or atual == 'negociacoes_lista' or atual == 'recibo' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      <span>Negociações{% if qtd_pendencias %} <b class="contador">{{ qtd_pendencias }}</b>{% endif %}</span>
+    </a>
+    <a href="{% url 'resultados' %}" {% if atual == 'resultados' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-7"/></svg>
+      <span>Resultados</span>
+    </a>
+    <a href="{% url 'painel' %}" {% if atual == 'painel' or atual == 'material_novo' or atual == 'material_editar' or atual == 'material_excluir' %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg>
+      <span>Painel</span>
+    </a>
+  </nav>
+  {% endwith %}
+  {% endif %}
+  <script src="{% static 'js/pwa.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

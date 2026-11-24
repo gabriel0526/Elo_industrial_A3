@@ -1,0 +1,14 @@
+<li class="linha {% if n.vez_de_mim %}procura{% endif %}">
+  <div>
+    <h3><a href="{% url 'negociacao_detalhe' n.pk %}">{{ n.material.titulo }}</a></h3>
+    <p class="meta">
+      com {{ n.outra.nome }}, {{ n.outra.cidade }}/{{ n.outra.estado }}
+      &nbsp;|&nbsp; {{ n.quantidade|floatformat:"-2" }} {{ n.material.get_unidade_display }}
+      {% if n.modalidade == 'venda' and n.preco %}&nbsp;|&nbsp; R$ {{ n.total|floatformat:2 }}{% else %}&nbsp;|&nbsp; doação{% endif %}
+    </p>
+  </div>
+  <div class="lado">
+    <span class="selo status-{{ n.status }}">{{ n.get_status_display }}</span>
+    {% if n.status == 'concluida' and n.recibo %}<a href="{% url 'recibo' n.recibo.pk %}">Ver recibo</a>{% endif %}
+  </div>
+</li>

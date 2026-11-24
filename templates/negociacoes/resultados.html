@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block titulo %}Resultados | Elo Industrial{% endblock %}
+{% block conteudo %}
+<div class="container" style="padding-bottom:3rem;">
+  <div class="painel-topo">
+    <div>
+      <h1>Resultados</h1>
+      <p>O que a sua empresa já fechou pela plataforma. Só entram negociações concluídas, com entrega confirmada pelas duas partes.</p>
+    </div>
+    {% if total_concluidas %}
+    <a class="btn btn-contorno" href="{% url 'resultados_exportar' %}?periodo={{ periodo }}">Baixar histórico (CSV)</a>
+    {% endif %}
+  </div>
+
+  <form class="filtro-resultados" method="get">
+    <label>Período
+      <select name="periodo">
+        {% for chave, rotulo in periodos %}<option value="{{ chave }}" {% if chave == periodo %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Quanto você pagava para descartar 1 tonelada? <span class="ajuda">(opcional, em R$)</span>
+      <input type="text" name="custo" inputmode="decimal" value="{{ custo_texto }}" placeholder="Ex.: 180,50">
+    </label>
+    <button class="btn" type="submit">Atualizar</button>
+  </form>
+
+  {% if not total_concluidas %}
+    <div class="vazio">
+      <p>Nenhuma negociação concluída em "{{ periodo_rotulo }}". Quando você e a outra empresa confirmarem uma entrega, ela aparece aqui.</p>
+      <a class="btn" href="{% url 'buscar' %}">Buscar materiais</a>
+    </div>
+  {% else %}
+
+  <div class="indicadores">
+    <div class="indicador"><span>Negociações concluídas</span><strong>{{ dados.total }}</strong></div>
+    <div class="indicador"><span>Empresas parceiras</span><strong>{{ dados.parceiras }}</strong></div>
+    <div class="indicador"><span>Material que você entregou</span><strong>{{ dados.desviado }}</strong></div>
+    <div class="indicador"><span>Material que você recebeu</span><strong>{{ dados.recebido }}</strong></div>
+    <div class="indicador"><span>Receita com vendas</span><strong>{{ dados.receita }}</strong></div>
+    <div class="indicador"><span>Gasto com compras</span><strong>{{ dados.gasto }}</strong></div>
+  </div>
+  <p class="ajuda">
+    Doações: {{ dados.doacoes_dadas }} feita{{ dados.doacoes_dadas|pluralize }} e {{ dados.doacoes_recebidas }} recebida{{ dados.doacoes_recebidas|pluralize }}.
+    Só kg e toneladas entram nas somas de material.
+    {% if dados.outras_unidades %}Também movimentado em outras unidades: {{ dados.outras_unidades }}.{% endif %}
+  </p>
+
+  {% if dados.economia %}
+  <section class="caixa-ia">
+    <h2 class="subtitulo" style="margin-top:0;">Estimativa de economia</h2>
+    <p>Você entregou <strong>{{ dados.economia.massa }}</strong> que deixaram de ser descartados. Com o custo de {{ dados.economia.custo }} por tonelada que você informou:</p>
+    <ul>
+      <li>Custo de descarte evitado: <strong>{{ dados.economia.evitado }}</strong></li>
+      <li>Receita com vendas: <strong>{{ dados.economia.receita }}</strong></li>
+      <li>Ganho total estimado: <strong>{{ dados.economia.total }}</strong></li>
+    </ul>
+    <p class="ajuda">É uma estimativa: usa só o material em kg ou toneladas que você entregou e o valor que você digitou. O valor não fica salvo.</p>
+  </section>
+  {% endif %}
+
+  <h2 class="subtitulo">Por categoria</h2>
+  <ul class="barras">
+    {% for c in dados.categorias %}
+    <li>
+      <span class="rotulo">{{ c.nome }}</span>
+      <span class="trilho"><span class="preenchido" style="width: {{ c.largura }}%"></span></span>
+      <span class="valor">{{ c.negociacoes }} negociaç{{ c.negociacoes|pluralize:"ão,ões" }}{% if c.massa %} | {{ c.massa }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h2 class="subtitulo">Por mês</h2>
+  <ul class="barras">
+    {% for m in dados.meses %}
+    <li>
+      <span class="rotulo">{{ m.rotulo }}</span>
+      <span class="trilho"><span class="preenchido" style="width: {{ m.largura }}%"></span></span>
+      <span class="valor">{{ m.negociacoes }}{% if m.massa %} | {{ m.massa }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h2 class="subtitulo">Últimas concluídas</h2>
+  <ul class="lista">{% for n in recentes %}{% include 'negociacoes/_item.html' with n=n %}{% endfor %}</ul>
+  {% if total_concluidas > recentes|length %}
+    <p class="ajuda">Mostrando {{ recentes|length }} de {{ total_concluidas }}. O CSV traz todas.</p>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}
