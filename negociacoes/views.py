@@ -1,11 +1,12 @@
 from django.contrib import messages
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from contas.decorators import empresa_obrigatoria
 from materiais.models import Material
 
+from . import aovivo
 from . import resultados as calculo
 from .forms import MensagemForm, PropostaForm, TermosForm
 from .models import AcaoInvalida, Negociacao, Recibo
@@ -37,6 +38,7 @@ def lista(request):
         'aguardando': [n for n in negociacoes if n.ativa and n.vez_de(empresa)],
         'andamento': [n for n in negociacoes if n.ativa and not n.vez_de(empresa)],
         'encerradas': [n for n in negociacoes if not n.ativa],
+        'versao': aovivo.versao_das_negociacoes(empresa)[0],
     })
 
 
@@ -93,6 +95,7 @@ def detalhe(request, pk):
         'ja_confirmei': neg.confirmou(empresa),
         'mensagens': neg.mensagens.select_related('autor'),
         'form_mensagem': MensagemForm(),
+        'versao': aovivo.versao_da_negociacao(neg),
     })
 
 
@@ -219,3 +222,45 @@ def resultados_exportar(request):
     resposta.write('\ufeff')  # marca de UTF-8 para o Excel mostrar os acentos certos
     calculo.escrever_csv(resposta, empresa, negociacoes)
     return resposta
+
+
+# ---------- atualização automática (Etapa 8) ----------
+def _json_sem_cache(dados, status=200):
+    resposta = JsonResponse(dados, status=status)
+    resposta['Cache-Control'] = 'no-store'
+    return resposta
+
+
+def _ao_vivo(view):
+    """Como empresa_obrigatoria, mas responde em JSON (a página de login não faz sentido para o script)."""
+
+    def interna(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return _json_sem_cache({'erro': 'login'}, status=401)
+        empresa = getattr(request.user, 'empresa', None)
+        if empresa is None:
+            return _json_sem_cache({'erro': 'empresa'}, status=403)
+        request.empresa = empresa
+        return view(request, *args, **kwargs)
+
+    interna.__name__ = view.__name__
+    return require_GET(interna)
+
+
+@_ao_vivo
+def ao_vivo(request):
+    versao, pendencias = aovivo.versao_das_negociacoes(request.empresa)
+    return _json_sem_cache({'v': versao, 'pendencias': pendencias})
+
+
+@_ao_vivo
+def ao_vivo_negociacao(request, pk):
+    neg = (
+        Negociacao.objects.select_related('material__empresa', 'proponente')
+        .filter(pk=pk).first()
+    )
+    # quem não participa recebe o mesmo 404 de uma negociação que não existe
+    if neg is None or not neg.participa(request.empresa):
+        return _json_sem_cache({'erro': 'nao_encontrada'}, status=404)
+    pendencias = Negociacao.objects.pendentes_de(request.empresa).count()
+    return _json_sem_cache({'v': aovivo.versao_da_negociacao(neg), 'pendencias': pendencias})

@@ -25,6 +25,34 @@ python manage.py popular_exemplo
 Cria 6 empresas, 7 anúncios e 2 negociações (uma aberta e uma concluída, com recibo). Todas usam a senha `exemplo12345`
 (e-mail da Marcenaria: `marcenariaboamadeira@exemplo.com`).
 
+## IA (Etapa 4)
+
+Funciona com **Gemini (Google)**, que tem plano gratuito, ou **Claude (Anthropic)**, que é pago. Sem nenhuma chave,
+o site funciona normalmente e os botões de IA não aparecem.
+
+**Gemini (gratuito)**
+1. Entre em https://aistudio.google.com/apikey com uma conta Google e crie uma chave. Não precisa ativar cobrança.
+2. Copie `.env.example` para `.env` e cole a chave em `GEMINI_API_KEY`.
+3. Reinicie o servidor.
+
+Se o Gemini disser que não achou o modelo, troque `GEMINI_MODEL` no `.env` por outro que apareça no AI Studio
+(os nomes e os limites do plano gratuito mudam com o tempo).
+
+**Atenção com o plano gratuito:** o Google informa que, nele, o conteúdo enviado pode ser usado para melhorar os
+produtos dele. Para o trabalho, use dados de exemplo e não cole informações reais ou sigilosas de empresas.
+
+**Claude (pago):** chave em https://console.anthropic.com (cobrança própria, separada da assinatura do Claude.ai),
+em `ANTHROPIC_API_KEY`. Modelo padrão `claude-haiku-5-5` (`CLAUDE_MODEL` para trocar).
+
+Com as duas chaves no `.env`, o Gemini é usado primeiro. `IA_PROVEDOR=anthropic` (ou `gemini`) força a escolha.
+
+Onde aparece:
+- **Novo material:** caixa "Descreva com suas palavras" preenche o formulário.
+- **Negociação:** botão "Sugerir mensagem com IA" gera um rascunho no campo de mensagem.
+
+A IA só sugere: nada é salvo ou enviado sem a pessoa revisar. Telefone e e-mail nunca são enviados. O limite
+padrão é 30 usos por hora por usuário (`IA_LIMITE_POR_HORA`).
+
 ## Resultados (Etapa 5)
 
 Menu **Resultados**. Mostra, só com negociações concluídas da sua empresa: quantidade, empresas parceiras, material
@@ -60,6 +88,28 @@ Se mudar muito o visual, troque `PWA_VERSION` em `config/settings.py` para os ap
 **Não é app de loja:** não vai para Play Store nem App Store. Se um dia for preciso, dá para empacotar este mesmo
 site (Capacitor, ou TWA no Android) sem reescrever nada.
 
+## Negociação ao vivo (Etapa 8)
+
+Com duas empresas logadas ao mesmo tempo, o que uma faz aparece na tela da outra **sozinho, em até 3 segundos**,
+sem apertar F5: mensagens novas (com destaque), contraproposta, aceite, confirmações de entrega, recibo, o contador
+de pendências no menu e a lista de negociações. Um indicador "Ao vivo" aparece na conversa (vira "Reconectando..."
+se a conexão cair).
+
+**Como funciona:** a página pergunta ao servidor, a cada 3 segundos, se algo mudou (a resposta é só um código curto).
+Se mudou, ela busca a si mesma de novo e troca só os trechos que mudaram. O campo de digitar mensagem fica de fora,
+então ninguém perde o que está escrevendo. Não usa WebSocket de propósito: funciona com o servidor normal do Django
+e no Codespaces, sem instalar nada e sem mexer no banco. O custo é um atraso de alguns segundos em vez de instantâneo.
+O script só pergunta enquanto a aba está visível.
+
+**Roteiro para a apresentação** (depois de `python manage.py popular_exemplo`, senha de todas: `exemplo12345`):
+1. Navegador 1: entre como `marcenariaboamadeira@exemplo.com` e abra Negociações > "Apara de madeira".
+2. Navegador 2 (**janela anônima** ou outro navegador, porque a sessão é por navegador): entre como
+   `briquetesnordeste@exemplo.com` e abra a mesma negociação.
+3. Mande mensagens de um lado e veja chegarem do outro. Faça contraproposta, aceite, confirme a entrega nos dois
+   lados e mostre o recibo aparecendo. O contador do menu muda sozinho.
+
+Se a negociação de exemplo já foi concluída em outro teste, use **Buscar materiais** e faça uma proposta nova.
+
 ## Etapas
 
 - [x] Etapa 1: site base (cadastro, login, cadastro de materiais)
@@ -68,4 +118,5 @@ site (Capacitor, ou TWA no Android) sem reescrever nada.
 - [x] Etapa 4: IA (preencher anúncio por texto livre e sugerir mensagem na negociação)
 - [x] Etapa 5: painel de resultados (histórico, volume, valores, estimativa de economia e CSV)
 - [x] Etapa 6: versão app (PWA instalável no celular)
-
+- [x] Etapa 7: IA gratuita (Gemini do Google, com o Claude como opção; só a parte da IA mudou)
+- [x] Etapa 8: negociação ao vivo entre duas contas (atualização automática)

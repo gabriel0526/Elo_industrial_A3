@@ -10,6 +10,7 @@
     <a class="btn btn-contorno" href="{% url 'buscar' %}">Buscar materiais</a>
   </div>
 
+  <div id="lista-ao-vivo" data-ao-vivo="lista" data-versao="{{ versao }}">
   {% if not aguardando and not andamento and not encerradas %}
     <div class="vazio">
       <p>Você ainda não tem negociações. Abra um anúncio na busca e clique em "Fazer proposta".</p>
@@ -31,5 +32,6 @@
     <h2 class="subtitulo">Encerradas</h2>
     <ul class="lista">{% for n in encerradas %}{% include 'negociacoes/_item.html' with n=n %}{% endfor %}</ul>
   {% endif %}
+  </div>
 </div>
 {% endblock %}

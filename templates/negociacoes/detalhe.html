@@ -2,19 +2,20 @@
 {% load static %}
 {% block titulo %}Negociação: {{ neg.material.titulo }} | Elo Industrial{% endblock %}
 {% block conteudo %}
-<div class="container" style="padding-block:2rem 3rem;">
+<div class="container" style="padding-block:2rem 3rem;" data-ao-vivo="negociacao" data-versao-url="{% url 'negociacao_ao_vivo' neg.pk %}" data-versao="{{ versao }}">
   <p style="margin:0 0 .5rem;"><a href="{% url 'negociacoes_lista' %}">Voltar para as negociações</a></p>
   <div class="painel-topo" style="margin-top:.25rem;">
     <div>
       <h1>{{ neg.material.titulo }}</h1>
       <p>Negociação com {{ outra.nome }}, {{ outra.cidade }}/{{ outra.estado }}</p>
     </div>
-    <span class="selo status-{{ neg.status }}">{{ neg.get_status_display }}</span>
+    <span id="neg-selo" class="selo status-{{ neg.status }}">{{ neg.get_status_display }}</span>
   </div>
 
   <div class="neg-grade">
     <section class="cartao">
       <h2 class="subtitulo" style="margin-top:0;">Termos atuais</h2>
+      <div id="neg-painel">
       <dl class="termos">
         <dt>Quantidade</dt><dd>{{ neg.quantidade|floatformat:"-2" }} {{ neg.material.get_unidade_display }}</dd>
         <dt>Modalidade</dt><dd>{{ neg.get_modalidade_display }}</dd>
@@ -65,16 +66,17 @@
       {% else %}
         <p class="aviso">Esta negociação foi encerrada.</p>
       {% endif %}
+      </div>
     </section>
 
     <section class="cartao conversa">
-      <h2 class="subtitulo" style="margin-top:0;">Conversa</h2>
-      <ul class="mensagens-neg">
+      <h2 class="subtitulo" style="margin-top:0;">Conversa <span class="ao-vivo" id="ao-vivo-ponto" title="Esta página se atualiza sozinha">Ao vivo</span></h2>
+      <ul class="mensagens-neg" id="neg-mensagens" role="log" aria-live="polite">
         {% for m in mensagens %}
           {% if m.sistema %}
-            <li class="sistema">{{ m.texto }} <span class="hora">{{ m.criada_em|date:"d/m H:i" }}</span></li>
+            <li class="sistema" data-id="{{ m.pk }}">{{ m.texto }} <span class="hora">{{ m.criada_em|date:"d/m H:i" }}</span></li>
           {% else %}
-            <li class="{% if m.autor_id == request.empresa.pk %}minha{% else %}deles{% endif %}">
+            <li class="{% if m.autor_id == request.empresa.pk %}minha{% else %}deles{% endif %}" data-id="{{ m.pk }}">
               <span class="autor">{{ m.autor.nome }}</span>
               <p>{{ m.texto|linebreaksbr }}</p>
               <span class="hora">{{ m.criada_em|date:"d/m H:i" }}</span>
@@ -83,7 +85,7 @@
         {% endfor %}
       </ul>
       {% if neg.ativa %}
-        <form method="post" action="{% url 'negociacao_mensagem' neg.pk %}">
+        <form id="neg-compor" method="post" action="{% url 'negociacao_mensagem' neg.pk %}">
           {% csrf_token %}
           {% if ia_ativa %}
           <div class="caixa-ia" data-ia-mensagem data-url="{% url 'ia_mensagem' neg.pk %}">
